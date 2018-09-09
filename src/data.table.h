@@ -153,3 +153,4 @@ double wallclock();
 int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
+SEXP groupbyR(SEXP x, SEXP y, SEXP by);
