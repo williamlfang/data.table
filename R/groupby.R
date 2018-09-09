@@ -1,4 +1,4 @@
-# R prototype to describe the logic, using sum
+# R prototype to describe C logic, using sum
 groupby = function(x, y, by) {
   stopifnot(is.data.table(x),
             is.character(y), length(y)==1L, y%in%names(x),
@@ -17,6 +17,7 @@ groupby = function(x, y, by) {
   ans
 }
 
+# this is for testing prototype only
 if (dev<-FALSE) {
   cc(F)
   set.seed(108)
@@ -26,7 +27,8 @@ if (dev<-FALSE) {
   all.equal(groupby(x, y, by), x[, sum(V1), keyby=V2][["V1"]])
 }
 
-groupbyC = function(x, y, by, dev=TRUE) {
+# this proper C implementation
+groupbyC = function(x, y, by, dev=FALSE) {
   stopifnot(is.data.table(x),
             is.character(y), length(y)==1L, y%in%names(x),
             is.character(by), by%in%names(x),
@@ -35,18 +37,21 @@ groupbyC = function(x, y, by, dev=TRUE) {
   return(if (!dev) ans[[4L]] else setattr(ans, "names", c("order","grp_start","group_end","ans"))[])
 }
 
+# testing and benchmarking C implementation
 if (dev<-FALSE) {
   cc(F)
   set.seed(108)
-  N = 1e8
+  N = 1e9
   x = data.table(V1=rnorm(N), V2=sample(as.integer(N/2), N, replace = TRUE))
   x[1,1] # avoid overhead on first call after `cc`
   y = "V1"
   by = "V2"
-  system.time(ans1<-groupbyC(x, y, by, dev=FALSE))
+  system.time(ans1<-data.table:::groupbyC(x, y, by, dev=FALSE))
   system.time(ans2<-x[, sum(V1), keyby=V2][["V1"]])
   all.equal(ans1, ans2)
-  # N=10: 0.002 vs 0.027 (still `[` has some overhead)
-  # N=1e7: 0.452 vs 0.993 (only 4 cores)
-  # N=1e8: 4.8 vs 10.6 (only 4 cores, not very good utilization of cores)
+  # N=1e1: 0.002 vs 0.027 (still `[` has some overhead)
+  # N=1e7: 0.452 vs 0.993 (4 cores)
+  # N=1e8: 4.8 vs 10.6 (4 cores)
+  # N=1e8: 5.3 vs 12 (20 cores)
+  # N=1e9: 56 vs 150 (20 cores)
 }
